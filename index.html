@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>CleanCampus – Smart Cleanliness Reporting System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav><div class="wrap">
+<div class="logo" onclick="go('home')"><svg width="30" height="30" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#16a34a"/><path d="M16 26V15M16 15c0-6 5-8 9-8 0 5-3 8-9 8zM16 19c0-4-3-6-7-6 0 4 2 6 7 6z" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>CleanCampus</div>
+<div class="links" id="links"><a data-p="home">Home</a><a data-p="report">Report Issue</a><a data-p="complaints">Complaints</a><a data-p="dashboard">Dashboard</a><a data-p="about">About</a></div>
+<button class="btn cta" onclick="go('report')">Report an Issue</button>
+<button class="burger" aria-label="Menu" onclick="links.classList.toggle('open')">☰</button>
+</div></nav>
+<main class="wrap">
+<div class="page" id="home">
+<div class="hero"><div><h1>Keep Our Campus Clean.<br>Report. Track. Improve.</h1>
+<p>Help make our campus cleaner by reporting cleanliness problems in just a few clicks.</p>
+<div class="row"><button class="btn" onclick="go('report')">Report a Problem</button><button class="btn alt" onclick="go('complaints')">View Complaints</button></div></div>
+<img class="himg" alt="VIT Bhopal University main academic building" src="college.jpg"></div>
+<section><div class="g3">
+<div class="card"><div class="ico">📸</div><h3>Report</h3><p>Quickly report cleanliness problems with a photo and location.</p></div>
+<div class="card"><div class="ico">📍</div><h3>Track</h3><p>Track reported issues and their current status.</p></div>
+<div class="card"><div class="ico">🌱</div><h3>Improve</h3><p>Help campus authorities identify and resolve recurring problems.</p></div></div></section>
+<section><div class="g4" id="hstats"></div></section></div>
+
+<div class="page" id="report"><div class="card form" id="rform"><h2>Report a Cleanliness Issue</h2><p style="color:var(--mut)">Found a cleanliness problem? Tell us about it and help improve the campus.</p>
+<form id="f" novalidate>
+<div class="two"><div><label>Student Name</label><input class="in" name="name" placeholder="Enter your name"><div class="err"></div></div>
+<div><label>Student ID</label><input class="in" name="sid" placeholder="Enter your student ID"><div class="err"></div></div></div>
+<div class="two"><div><label>Campus Location</label><select class="in" name="loc" id="floc"></select><div class="err"></div></div>
+<div><label>Problem Type</label><select class="in" name="type" id="ftype"></select><div class="err"></div></div></div>
+<label>Description</label><textarea class="in" name="desc" rows="4" placeholder="Describe the problem…"></textarea><div class="err"></div>
+<label>Upload Photo</label><div class="drop" id="drop"><div id="dp"><div style="font-size:2rem">📷</div><b>Upload a photo of the problem</b><br><small>PNG, JPG or JPEG – click or drag here</small></div></div>
+<input type="file" id="file" accept="image/png,image/jpeg" hidden><div class="err" id="ferr"></div>
+<label>Priority</label><div class="pr"><label><input type="radio" name="pri" value="Low">Low</label><label><input type="radio" name="pri" value="Medium" checked>Medium</label><label><input type="radio" name="pri" value="High">High</label></div>
+<button class="btn" style="width:100%;margin-top:22px;padding:14px">Submit Report</button></form></div>
+<div class="card form ok" id="rok" style="display:none"></div></div>
+
+<div class="page" id="complaints"><section><h2>Reported Cleanliness Issues</h2>
+<div class="tools"><input class="in" id="q" placeholder="Search complaints…"><select class="in" id="fl"></select><select class="in" id="ft"></select><select class="in" id="fs"></select><input class="in" type="date" id="fd" aria-label="Date"></div>
+<div class="g3" id="clist" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))"></div></section></div>
+
+<div class="page" id="dashboard"><section><h2>Cleanliness Dashboard</h2><div class="g4" id="dstats"></div>
+<div class="cg"><div class="card"><canvas id="c1"></canvas></div><div class="card"><canvas id="c2"></canvas></div><div class="card"><canvas id="c3"></canvas></div><div class="card"><canvas id="c4"></canvas></div></div>
+<div class="card"><h3>Recent Reports</h3><div class="tw"><table><thead><tr><th>Complaint ID</th><th>Location</th><th>Problem</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="dtb"></tbody></table></div></div></section></div>
+
+<div class="page" id="about"><section class="card" style="margin-top:36px"><h2>About Smart Cleanliness Reporting System</h2>
+<p>This platform provides a simple way for students to report cleanliness issues around campus. Instead of waiting for someone else to notice a problem, students can quickly report an issue by selecting its location, describing the problem and uploading a photo.</p>
+<p>The system converts everyday observations into useful data that can help administrators identify problem areas and respond more efficiently.</p>
+<h3 style="margin-top:22px">Why This System?</h3><ul class="why"><li>Faster reporting</li><li>Better monitoring</li><li>Data-driven cleanliness management</li><li>Student participation</li><li>Improved campus environment</li></ul></section></div>
+</main>
+<footer>CleanCampus · Smart Cleanliness Reporting System · Inspired by Swachh Bharat Abhiyan</footer>
+<div class="modal" id="modal"><div class="card" id="mc"></div></div><div id="toast"></div>
+<script src="script.js"></script></body></html>
