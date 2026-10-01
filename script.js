@@ -21,16 +21,27 @@ const r=[["Overflowing Dustbin","Canteen","Pending",0,"High","Aman Verma","25BCE
 ["Dirty Washroom","Classroom Block","Pending",14,"Medium","Yash Kulkarni","25BAI10234","Washroom smells bad, soap dispenser empty."],
 ["Overflowing Dustbin","Academic Block","Pending",16,"Low","Meera Nair","25MEI10345","Corridor dustbin overflowing after lunch."]];
 return r.map((x,i)=>({id:"CLN-2026-"+String(116+i).padStart(5,"0"),type:x[0],loc:x[1],status:x[2],date:d(x[3]),pri:x[4],name:x[5],sid:x[6],desc:x[7],img:ph(x[0])}))}
-let DB=[];try{DB=JSON.parse(localStorage.getItem(KEY))||null}catch(e){}
-if(!DB){DB=[];save()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){toast("Storage is full – photo not saved","w")}}
+// ===== Supabase connection: paste your Project URL below (Project Settings > API) =====
+const SB="https://twtpuroziifmphblwmne.supabase.co";
+const SB_KEY="sb_publishable_6Su1H5vcP8O1eiY0_MB1Pg_53nt3Ba7";
+const H=(x={})=>({apikey:SB_KEY,...x});
+let DB=[];
+async function load(){try{const r=await fetch(`${SB}/rest/v1/complaints?select=*&order=created_at.desc`,{headers:H()});if(!r.ok)throw 0;
+DB=(await r.json()).map(x=>({id:x.id,name:x.name,sid:x.sid,loc:x.loc,type:x.type,desc:x.description,img:x.img_url,pri:x.priority,status:x.status,date:x.date}))}
+catch(e){if(!load.w){load.w=1;toast("Cannot reach the database. Check the Project URL and your internet.","w")}}}
+async function add(c){await load();const blob=await(await fetch(c.img)).blob(),fn=Date.now()+".jpg";
+let r=await fetch(`${SB}/storage/v1/object/photos/${fn}`,{method:"POST",headers:H({"Content-Type":"image/jpeg"}),body:blob});if(!r.ok)throw 0;
+c.img=`${SB}/storage/v1/object/public/photos/${fn}`;
+for(let i=0;i<5;i++){c.id="CLN-2026-"+String(DB.length+1+i).padStart(5,"0");
+r=await fetch(`${SB}/rest/v1/complaints`,{method:"POST",headers:H({"Content-Type":"application/json"}),body:JSON.stringify({id:c.id,name:c.name,sid:c.sid,loc:c.loc,type:c.type,description:c.desc,img_url:c.img,priority:c.pri,status:"Pending",date:c.date})});
+if(r.ok)return;if(r.status!=409)throw 0}throw 0}
 function toast(m,w){const e=document.createElement("div");e.className="t "+(w||"");e.textContent=m;$("#toast").append(e);setTimeout(()=>e.remove(),3200)}
 const fmt=d=>new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
 const cnt=s=>DB.filter(c=>c.status==s).length;
 // navigation
 function go(p){document.querySelectorAll(".page").forEach(e=>e.classList.toggle("on",e.id==p));document.querySelectorAll(".links a").forEach(a=>a.classList.toggle("on",a.dataset.p==p));
 $("#links").classList.remove("open");location.hash=p;scrollTo(0,0);
-if(p=="home")home();if(p=="complaints")list();if(p=="dashboard")dash();if(p=="report")resetForm()}
+if(p=="report")resetForm();load().then(refresh)}
 document.querySelectorAll(".links a").forEach(a=>a.onclick=()=>go(a.dataset.p));
 const opts=(a,all)=>(all?`<option value="">${all}</option>`:"")+a.map(x=>`<option>${x}</option>`).join("");
 $("#floc").innerHTML=opts(LOCS,"Select location");$("#ftype").innerHTML=opts(TYPES,"Select problem type");
@@ -50,7 +61,7 @@ const im=new Image(),u=URL.createObjectURL(f);im.onload=()=>{const s=Math.min(1,
 c.getContext("2d").drawImage(im,0,0,c.width,c.height);photo=c.toDataURL("image/jpeg",.7);$("#dp").innerHTML=`<img src="${photo}" alt="Preview"><br><small>Click to change photo</small>`;URL.revokeObjectURL(u)};im.src=u}
 function resetForm(){$("#f").reset();photo=null;$("#dp").innerHTML=`<div style="font-size:2rem">📷</div><b>Upload a photo of the problem</b><br><small>PNG, JPG or JPEG – click or drag here</small>`;
 $("#rform").style.display="";$("#rok").style.display="none";document.querySelectorAll(".err").forEach(e=>e.textContent="");document.querySelectorAll(".bad").forEach(e=>e.classList.remove("bad"))}
-$("#f").onsubmit=e=>{e.preventDefault();const f=e.target,v=n=>f.elements[n].value.trim();let ok=true;
+$("#f").onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f.elements[n].value.trim();let ok=true;
 const chk=(n,m)=>{const el=f.elements[n],bad=!v(n);el.classList.toggle("bad",bad);el.parentElement.querySelector(".err").textContent=bad?m:"";if(bad)ok=false};
 chk("name","Enter your name.");chk("sid","Enter your student ID.");chk("loc","Select a campus location.");chk("type","Select a problem type.");chk("desc","Describe the problem so staff can find it.");
 if(v("sid")&&!/^[A-Za-z0-9]{6,}$/.test(v("sid"))){ok=false;f.elements.sid.classList.add("bad");f.elements.sid.parentElement.querySelector(".err").textContent="Student ID needs at least 6 letters or digits."}
@@ -58,7 +69,7 @@ if(v("desc")&&v("desc").length<10){ok=false;f.elements.desc.classList.add("bad")
 if(!photo){ok=false;$("#ferr").textContent="Upload a photo as evidence."}
 if(!ok){toast("Please fix the highlighted fields","w");return}
 const n=DB.length+1;const c={id:"CLN-2026-"+String(n).padStart(5,"0"),name:v("name"),sid:v("sid"),loc:v("loc"),type:v("type"),desc:v("desc"),img:photo,pri:f.elements.pri.value,status:"Pending",date:new Date().toISOString().slice(0,10)};
-DB.unshift(c);save();toast("Report submitted");
+toast("Submitting…");try{await add(c)}catch(err){toast("Could not submit. Check the Supabase setup and internet.","w");return}DB.unshift(c);toast("Report submitted");
 $("#rform").style.display="none";const o=$("#rok");o.style.display="";
 o.innerHTML=`<div class="big">✅</div><h2>Report Submitted Successfully!</h2><div class="cid">Complaint ID: ${c.id}</div>
 <dl class="dl" style="text-align:left;max-width:320px;margin:14px auto"><dt>Location</dt><dd>${esc(c.loc)}</dd><dt>Problem Type</dt><dd>${esc(c.type)}</dd><dt>Date</dt><dd>${fmt(c.date)}</dd><dt>Status</dt><dd><span class="badge Pending">Pending</span></dd></dl>
@@ -79,7 +90,7 @@ $("#mc").innerHTML=`<div style="display:flex;justify-content:space-between;align
 $("#modal").classList.add("open")}
 function closeM(){$("#modal").classList.remove("open")}
 $("#modal").onclick=e=>{if(e.target.id=="modal")closeM()};addEventListener("keydown",e=>{if(e.key=="Escape")closeM()});
-function setS(id,s){const c=DB.find(x=>x.id==id);c.status=s;save();toast(`${id} marked ${s}`);refresh();if($("#modal").classList.contains("open"))openC(id)}
+async function setS(id,s){const c=DB.find(x=>x.id==id);try{const r=await fetch(`${SB}/rest/v1/complaints?id=eq.${id}`,{method:"PATCH",headers:H({"Content-Type":"application/json"}),body:JSON.stringify({status:s})});if(!r.ok)throw 0}catch(e){toast("Could not update status","w");return}c.status=s;toast(`${id} marked ${s}`);refresh();if($("#modal").classList.contains("open"))openC(id)}
 function refresh(){const p=document.querySelector(".page.on").id;if(p=="dashboard")dash();if(p=="complaints")list();if(p=="home")home()}
 // dashboard
 let CH=[];
