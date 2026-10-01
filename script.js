@@ -22,17 +22,28 @@ const r=[["Overflowing Dustbin","Canteen","Pending",0,"High","Aman Verma","25BCE
 ["Overflowing Dustbin","Academic Block","Pending",16,"Low","Meera Nair","25MEI10345","Corridor dustbin overflowing after lunch."]];
 return r.map((x,i)=>({id:"CLN-2026-"+String(116+i).padStart(5,"0"),type:x[0],loc:x[1],status:x[2],date:d(x[3]),pri:x[4],name:x[5],sid:x[6],desc:x[7],img:ph(x[0])}))}
 // ===== Supabase connection: paste your Project URL below (Project Settings > API) =====
-const SB="https://twtpuroziifmphblwmne.supabase.co";
+const SB="PASTE_YOUR_PROJECT_URL_HERE";
 const SB_KEY="sb_publishable_6Su1H5vcP8O1eiY0_MB1Pg_53nt3Ba7";
 const H=(x={})=>({apikey:SB_KEY,...x});
 let DB=[];
+// ===== Admin login (Supabase Auth) =====
+let TOKEN="";try{TOKEN=sessionStorage.getItem("cc_t")||""}catch(e){}
+const HA=()=>H({Authorization:"Bearer "+TOKEN,"Content-Type":"application/json",Prefer:"return=representation"});
+function adminUI(){$("#adm").textContent=TOKEN?"Admin Logout":"Admin Login"}
+function lock(){TOKEN="";try{sessionStorage.removeItem("cc_t")}catch(e){}adminUI();refresh()}
+function adminBtn(){if(TOKEN){lock();closeM();toast("Logged out")}else showLogin()}
+function showLogin(){$("#mc").innerHTML=`<h2>Admin login</h2><p style="color:var(--mut)">Only admins can update status or delete complaints.</p><label style="display:block;margin:12px 0 6px;font-weight:600">Email</label><input class="in" id="ae" type="email"><label style="display:block;margin:12px 0 6px;font-weight:600">Password</label><input class="in" id="ap" type="password" onkeydown="if(event.key=='Enter')login()"><div class="err" id="aerr"></div><button class="btn" style="width:100%;margin-top:14px" onclick="login()">Log in</button>`;$("#modal").classList.add("open")}
+async function login(){try{const r=await fetch(`${SB}/auth/v1/token?grant_type=password`,{method:"POST",headers:H({"Content-Type":"application/json"}),body:JSON.stringify({email:$("#ae").value.trim(),password:$("#ap").value})});const j=await r.json();if(!r.ok||!j.access_token)throw 0;TOKEN=j.access_token;try{sessionStorage.setItem("cc_t",TOKEN)}catch(e){}closeM();adminUI();refresh();toast("Logged in as admin")}catch(e){$("#aerr").textContent="Wrong email or password."}}
+async function del(id){if(!TOKEN)return toast("Admin login required","w");if(!confirm("Delete "+id+" permanently?"))return;
+try{const r=await fetch(`${SB}/rest/v1/complaints?id=eq.${id}`,{method:"DELETE",headers:HA()});if(!r.ok)throw 0;if(!(await r.json()).length)throw 0;DB=DB.filter(x=>x.id!=id);closeM();toast(id+" deleted");refresh()}catch(e){toast("Could not delete. Log in again.","w");lock()}}
+
 async function load(){try{const r=await fetch(`${SB}/rest/v1/complaints?select=*&order=created_at.desc`,{headers:H()});if(!r.ok)throw 0;
 DB=(await r.json()).map(x=>({id:x.id,name:x.name,sid:x.sid,loc:x.loc,type:x.type,desc:x.description,img:x.img_url,pri:x.priority,status:x.status,date:x.date}))}
 catch(e){if(!load.w){load.w=1;toast("Cannot reach the database. Check the Project URL and your internet.","w")}}}
-async function add(c){await load();const blob=await(await fetch(c.img)).blob(),fn=Date.now()+".jpg";
+async function add(c){await load();const mx=Math.max(0,...DB.map(x=>+x.id.slice(-5)||0));const blob=await(await fetch(c.img)).blob(),fn=Date.now()+".jpg";
 let r=await fetch(`${SB}/storage/v1/object/photos/${fn}`,{method:"POST",headers:H({"Content-Type":"image/jpeg"}),body:blob});if(!r.ok)throw 0;
 c.img=`${SB}/storage/v1/object/public/photos/${fn}`;
-for(let i=0;i<5;i++){c.id="CLN-2026-"+String(DB.length+1+i).padStart(5,"0");
+for(let i=0;i<5;i++){c.id="CLN-2026-"+String(mx+1+i).padStart(5,"0");
 r=await fetch(`${SB}/rest/v1/complaints`,{method:"POST",headers:H({"Content-Type":"application/json"}),body:JSON.stringify({id:c.id,name:c.name,sid:c.sid,loc:c.loc,type:c.type,description:c.desc,img_url:c.img,priority:c.pri,status:"Pending",date:c.date})});
 if(r.ok)return;if(r.status!=409)throw 0}throw 0}
 function toast(m,w){const e=document.createElement("div");e.className="t "+(w||"");e.textContent=m;$("#toast").append(e);setTimeout(()=>e.remove(),3200)}
@@ -86,11 +97,11 @@ function openC(id){const c=DB.find(x=>x.id==id);if(!c)return;
 $("#mc").innerHTML=`<div style="display:flex;justify-content:space-between;align-items:start"><h2>${c.id}</h2><button class="btn alt sm" onclick="closeM()">✕</button></div>
 <img src="${c.img}" alt="Evidence" style="width:100%;max-height:260px;object-fit:cover;border-radius:14px;margin:8px 0 14px">
 <dl class="dl"><dt>Student Name</dt><dd>${esc(c.name)}</dd><dt>Student ID</dt><dd>${esc(c.sid)}</dd><dt>Location</dt><dd>${esc(c.loc)}</dd><dt>Problem Type</dt><dd>${esc(c.type)}</dd><dt>Description</dt><dd>${esc(c.desc)}</dd><dt>Date</dt><dd>${fmt(c.date)}</dd><dt>Priority</dt><dd>${c.pri}</dd><dt>Status</dt><dd>${bd(c.status)}</dd></dl>
-<label style="display:block;margin:18px 0 6px;font-weight:600">Admin: update status</label><select class="in" onchange="setS('${c.id}',this.value)">${STAT.map(s=>`<option ${s==c.status?"selected":""}>${s}</option>`).join("")}</select>`;
+${TOKEN?`<label style="display:block;margin:18px 0 6px;font-weight:600">Admin: update status</label><select class="in" onchange="setS('${c.id}',this.value)">${STAT.map(s=>`<option ${s==c.status?"selected":""}>${s}</option>`).join("")}</select><button class="btn sm" style="background:var(--or);margin-top:12px" onclick="del('${c.id}')">Delete complaint</button>`:`<p style="color:var(--mut);margin-top:16px;font-size:.9rem">🔒 Only admins can update status or delete complaints.</p>`}`;
 $("#modal").classList.add("open")}
 function closeM(){$("#modal").classList.remove("open")}
 $("#modal").onclick=e=>{if(e.target.id=="modal")closeM()};addEventListener("keydown",e=>{if(e.key=="Escape")closeM()});
-async function setS(id,s){const c=DB.find(x=>x.id==id);try{const r=await fetch(`${SB}/rest/v1/complaints?id=eq.${id}`,{method:"PATCH",headers:H({"Content-Type":"application/json"}),body:JSON.stringify({status:s})});if(!r.ok)throw 0}catch(e){toast("Could not update status","w");return}c.status=s;toast(`${id} marked ${s}`);refresh();if($("#modal").classList.contains("open"))openC(id)}
+async function setS(id,s){const c=DB.find(x=>x.id==id);if(!TOKEN){toast("Admin login required","w");return}try{const r=await fetch(`${SB}/rest/v1/complaints?id=eq.${id}`,{method:"PATCH",headers:HA(),body:JSON.stringify({status:s})});if(!r.ok||!(await r.json()).length)throw 0}catch(e){toast("Could not update. Please log in again.","w");lock();return}c.status=s;toast(`${id} marked ${s}`);refresh();if($("#modal").classList.contains("open"))openC(id)}
 function refresh(){const p=document.querySelector(".page.on").id;if(p=="dashboard")dash();if(p=="complaints")list();if(p=="home")home()}
 // dashboard
 let CH=[];
@@ -104,5 +115,6 @@ CH.push(new Chart($("#c2"),{type:"doughnut",data:{labels:LOCS,datasets:[{data:by
 CH.push(new Chart($("#c3"),{type:"pie",data:{labels:STAT,datasets:[{data:by("status",STAT),backgroundColor:["#ea580c","#2563eb","#16a34a"]}]},options:{...o("Complaint status"),plugins:{title:{display:true,text:"Complaint status"},legend:{display:true,position:"bottom"}}}}));
 const days=[...new Set(DB.map(c=>c.date))].sort();
 CH.push(new Chart($("#c4"),{type:"line",data:{labels:days.map(fmt),datasets:[{data:days.map(d=>DB.filter(c=>c.date==d).length),borderColor:"#16a34a",backgroundColor:"#dcfce7",fill:true,tension:.3}]},options:o("Reports over time",{scales:{y:{ticks:{precision:0},beginAtZero:true}}})}));
-$("#dtb").innerHTML=DB.slice(0,10).map(c=>`<tr><td>${c.id}</td><td>${esc(c.loc)}</td><td>${esc(c.type)}</td><td>${fmt(c.date)}</td><td>${bd(c.status)}</td><td><button class="btn alt sm" onclick="openC('${c.id}')">View</button> ${c.status=="Resolved"?"":`<button class="btn sm" onclick="setS('${c.id}','${STAT[STAT.indexOf(c.status)+1]}')">${c.status=="Pending"?"Start work":"Mark resolved"}</button>`}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">No reports yet.</td></tr>`}
+$("#dtb").innerHTML=DB.slice(0,10).map(c=>`<tr><td>${c.id}</td><td>${esc(c.loc)}</td><td>${esc(c.type)}</td><td>${fmt(c.date)}</td><td>${bd(c.status)}</td><td><button class="btn alt sm" onclick="openC('${c.id}')">View</button> ${c.status=="Resolved"||!TOKEN?"":`<button class="btn sm" onclick="setS('${c.id}','${STAT[STAT.indexOf(c.status)+1]}')">${c.status=="Pending"?"Start work":"Mark resolved"}</button>`} ${TOKEN?`<button class="btn sm" style="background:var(--or)" onclick="del('${c.id}')">Delete</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">No reports yet.</td></tr>`}
+adminUI();
 go((location.hash||"#home").slice(1).replace(/[^a-z]/g,"")||"home");
