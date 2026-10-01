@@ -22,7 +22,7 @@ const r=[["Overflowing Dustbin","Canteen","Pending",0,"High","Aman Verma","25BCE
 ["Overflowing Dustbin","Academic Block","Pending",16,"Low","Meera Nair","25MEI10345","Corridor dustbin overflowing after lunch."]];
 return r.map((x,i)=>({id:"CLN-2026-"+String(116+i).padStart(5,"0"),type:x[0],loc:x[1],status:x[2],date:d(x[3]),pri:x[4],name:x[5],sid:x[6],desc:x[7],img:ph(x[0])}))}
 // ===== Supabase connection: paste your Project URL below (Project Settings > API) =====
-const SB="PASTE_YOUR_PROJECT_URL_HERE";
+const SB="https://twtpuroziifmphblwmne.supabase.co";
 const SB_KEY="sb_publishable_6Su1H5vcP8O1eiY0_MB1Pg_53nt3Ba7";
 const H=(x={})=>({apikey:SB_KEY,...x});
 let DB=[];
